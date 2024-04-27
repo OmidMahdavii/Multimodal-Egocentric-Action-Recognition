@@ -8,6 +8,9 @@ import os
 import os.path
 from utils.logger import logger
 
+import random
+import numpy as np
+
 class EpicKitchensDataset(data.Dataset, ABC):
     def __init__(self, split, modalities, mode, dataset_conf, num_frames_per_clip, num_clips, dense_sampling,
                  transform=None, load_feat=False, additional_info=False, **kwargs):
@@ -85,7 +88,16 @@ class EpicKitchensDataset(data.Dataset, ABC):
         # Remember that the returned array should have size              #
         #           num_clip x num_frames_per_clip                       #
         ##################################################################
-        raise NotImplementedError("You should implement _get_val_indices")
+
+        indices = []
+
+        for _ in range(self.num_clips):
+            max_start_idx = record.num_frames[modality] - (self.num_frames_per_clip[modality] - 1) * self.stride
+            start_idx = random.randint(0, max_start_idx - 1)
+            clip = [start_idx + self.stride * i for i in range(self.num_frames_per_clip[modality])]
+            indices += clip
+            
+        return(np.array(indices))
 
     def __getitem__(self, index):
 

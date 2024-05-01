@@ -85,7 +85,7 @@ class EpicKitchensDataset(data.Dataset, ABC):
         #     clip = [start_idx + self.stride * i for i in range(self.num_frames_per_clip[modality])]
         #     indices += clip
 
-        clip_length = record.num_frames // self.num_clips
+        clip_length = record.num_frames[modality] // self.num_clips
         indices = []
 
         if self.dense_sampling:
@@ -111,7 +111,7 @@ class EpicKitchensDataset(data.Dataset, ABC):
         #           num_clip x num_frames_per_clip                       #
         ##################################################################
 
-        clip_length = record.num_frames // self.num_clips
+        clip_length = record.num_frames[modality] // self.num_clips
         indices = []
 
         if self.dense_sampling:

@@ -77,7 +77,29 @@ class EpicKitchensDataset(data.Dataset, ABC):
         # Remember that the returned array should have size              #
         #           num_clip x num_frames_per_clip                       #
         ##################################################################
-        raise NotImplementedError("You should implement _get_train_indices")
+
+
+        # for _ in range(self.num_clips):
+        #     max_start_idx = record.num_frames[modality] - (self.num_frames_per_clip[modality] - 1) * self.stride
+        #     start_idx = random.randint(0, max_start_idx - 1)
+        #     clip = [start_idx + self.stride * i for i in range(self.num_frames_per_clip[modality])]
+        #     indices += clip
+
+        clip_length = record.num_frames // self.num_clips
+        indices = []
+
+        if self.dense_sampling:
+            for offset in range(self.num_clips):
+                max_start_idx = (offset + 1) * clip_length - (self.num_frames_per_clip[modality] - 1) * self.stride
+                start_idx = random.randint(offset * clip_length, max_start_idx - 1)
+                samples = [start_idx + self.stride * i for i in range(self.num_frames_per_clip[modality])]
+                indices += samples
+        else:
+            space = clip_length // self.num_frames_per_clip[modality]
+            samples = [offset * clip_length + space * i for i in range(self.num_frames_per_clip[modality]) for offset in range(self.num_clips)]
+            indices += samples          
+
+        return(np.array(indices))
 
     def _get_val_indices(self, record, modality):
         ##################################################################
@@ -89,14 +111,19 @@ class EpicKitchensDataset(data.Dataset, ABC):
         #           num_clip x num_frames_per_clip                       #
         ##################################################################
 
+        clip_length = record.num_frames // self.num_clips
         indices = []
 
-        for _ in range(self.num_clips):
-            max_start_idx = record.num_frames[modality] - (self.num_frames_per_clip[modality] - 1) * self.stride
-            start_idx = random.randint(0, max_start_idx - 1)
-            clip = [start_idx + self.stride * i for i in range(self.num_frames_per_clip[modality])]
-            indices += clip
-            
+        if self.dense_sampling:
+            start_idx = int(clip_length / 2 - (self.num_frames_per_clip[modality] - 1) * self.stride / 2)
+            for offset in range(self.num_clips):
+                samples = [offset * start_idx + self.stride * i for i in range(self.num_frames_per_clip[modality])]
+                indices += samples
+        else:
+            space = clip_length // self.num_frames_per_clip[modality]
+            samples = [offset * clip_length + space * i for i in range(self.num_frames_per_clip[modality]) for offset in range(self.num_clips)]
+            indices += samples
+
         return(np.array(indices))
 
     def __getitem__(self, index):

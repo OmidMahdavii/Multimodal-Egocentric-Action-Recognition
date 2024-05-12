@@ -87,12 +87,30 @@ class EpicKitchensDataset(data.Dataset, ABC):
 
         clip_length = record.num_frames[modality] // self.num_clips
         indices = []
+        clip_overlap = False
 
-        if self.dense_sampling:
+        if clip_length < self.num_frames_per_clip[modality]:
+            clip_length = record.num_frames[modality]
+            clip_overlap = True
+        
+        for s in range(self.stride, 1, -1):
+            if clip_length >= (self.num_frames_per_clip[modality] - 1) * self.stride:
+                stride = s
+                break
+
+        if clip_overlap:
+            max_start_idx = clip_length - (self.num_frames_per_clip[modality] - 1) * stride
+            for _ in range(self.num_clips):
+                start_idx = random.randint(0, max_start_idx - 1)
+                samples = [start_idx + stride * i for i in range(self.num_frames_per_clip[modality])]
+                indices += samples
+            return(np.array(indices))
+
+        elif self.dense_sampling:
             for offset in range(self.num_clips):
-                max_start_idx = (offset + 1) * clip_length - (self.num_frames_per_clip[modality] - 1) * self.stride
+                max_start_idx = (offset + 1) * clip_length - (self.num_frames_per_clip[modality] - 1) * stride
                 start_idx = random.randint(offset * clip_length, max_start_idx - 1)
-                samples = [start_idx + self.stride * i for i in range(self.num_frames_per_clip[modality])]
+                samples = [start_idx + stride * i for i in range(self.num_frames_per_clip[modality])]
                 indices += samples
         else:
             space = clip_length // self.num_frames_per_clip[modality]
@@ -113,11 +131,29 @@ class EpicKitchensDataset(data.Dataset, ABC):
 
         clip_length = record.num_frames[modality] // self.num_clips
         indices = []
+        clip_overlap = False
+
+        if clip_length < self.num_frames_per_clip[modality]:
+            clip_length = record.num_frames[modality]
+            clip_overlap = True
+        
+        for s in range(self.stride, 1, -1):
+            if clip_length >= (self.num_frames_per_clip[modality] - 1) * self.stride:
+                stride = s
+                break
+
+        if clip_overlap:
+            max_start_idx = clip_length - (self.num_frames_per_clip[modality] - 1) * stride
+            for _ in range(self.num_clips):
+                start_idx = random.randint(0, max_start_idx - 1)
+                samples = [start_idx + stride * i for i in range(self.num_frames_per_clip[modality])]
+                indices += samples
+            return(np.array(indices))
 
         if self.dense_sampling:
-            start_idx = int(clip_length / 2 - (self.num_frames_per_clip[modality] - 1) * self.stride / 2)
+            start_idx = int(clip_length / 2 - (self.num_frames_per_clip[modality] - 1) * stride / 2)
             for offset in range(self.num_clips):
-                samples = [offset * start_idx + self.stride * i for i in range(self.num_frames_per_clip[modality])]
+                samples = [offset * start_idx + stride * i for i in range(self.num_frames_per_clip[modality])]
                 indices += samples
         else:
             space = clip_length // self.num_frames_per_clip[modality]

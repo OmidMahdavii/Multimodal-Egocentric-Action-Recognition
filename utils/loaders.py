@@ -93,8 +93,8 @@ class EpicKitchensDataset(data.Dataset, ABC):
             clip_length = record.num_frames[modality]
             clip_overlap = True
         
-        for s in range(self.stride, 1, -1):
-            if clip_length >= (self.num_frames_per_clip[modality] - 1) * self.stride:
+        for s in range(self.stride, 0, -1):
+            if clip_length > (self.num_frames_per_clip[modality] - 1) * s:
                 stride = s
                 break
 
@@ -137,8 +137,8 @@ class EpicKitchensDataset(data.Dataset, ABC):
             clip_length = record.num_frames[modality]
             clip_overlap = True
         
-        for s in range(self.stride, 1, -1):
-            if clip_length >= (self.num_frames_per_clip[modality] - 1) * self.stride:
+        for s in range(self.stride, 0, -1):
+            if clip_length > (self.num_frames_per_clip[modality] - 1) * s:
                 stride = s
                 break
 

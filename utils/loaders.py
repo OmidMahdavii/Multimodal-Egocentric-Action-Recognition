@@ -61,6 +61,7 @@ class EpicKitchensDataset(data.Dataset, ABC):
                 model_features = pd.DataFrame(pd.read_pickle(os.path.join("saved_features",
                                                                           self.dataset_conf[m].features_name + "_" +
                                                                           pickle_name))['features'])[["uid", "features_" + m]]
+                # model_features.shape: (5, 1024)
                 if self.model_features is None:
                     self.model_features = model_features
                 else:

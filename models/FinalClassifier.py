@@ -22,9 +22,7 @@ class CNN(nn.Module):
             nn.BatchNorm1d(num_clips*8),
             nn.ReLU(),
             # Shape: (num_clips*8, 16)
-            # nn.Conv1d(in_channels=8, out_channels=num_classes, kernel_size=16, stride=1, padding=0),
-            nn.Conv1d(in_channels=num_clips*8, out_channels=num_clips*16, kernel_size=16, stride=1, padding=0),
-            nn.Linear(num_clips*16, num_classes),
+            nn.Conv1d(in_channels=num_clips*8, out_channels=num_classes, kernel_size=16, stride=1, padding=0),
             # Shape: (num_classes, 1)
             nn.Sigmoid()
         )

@@ -56,7 +56,8 @@ def main():
         logger.info('{} Net\tModality: {}'.format(args.models[m].model, m))
         # notice that here, the first parameter passed is the input dimension
         # In our case it represents the feature dimensionality which is equivalent to 1024 for I3D
-        models[m] = getattr(model_list, args.models[m].model)(num_classes)
+        action_conf = getattr(args, args.action)
+        models[m] = getattr(model_list, args.models[m].model)(num_classes, action_conf.num_clips)
 
     # the models are wrapped into the ActionRecognition task which manages all the training steps
     action_classifier = tasks.ActionRecognition("action-classifier", models, args.batch_size,
@@ -146,15 +147,23 @@ def train(action_classifier, train_loader, val_loader, device, num_classes):
         source_label = source_label.to(device)
         data = {}
 
-        for clip in range(args.train.num_clips):
-            # in case of multi-clip training one clip per time is processed
-            for m in modalities:
-                data[m] = source_data[m][:, clip].to(device)
+        # for clip in range(args.train.num_clips):
+        #     # in case of multi-clip training one clip per time is processed
+        #     for m in modalities:
+        #         data[m] = source_data[m][:, clip].to(device)
 
-            logits, _ = action_classifier.forward(data)
-            action_classifier.compute_loss(logits, source_label, loss_weight=1)
-            action_classifier.backward(retain_graph=False)
-            action_classifier.compute_accuracy(logits, source_label)
+        #     logits, _ = action_classifier.forward(data)
+        #     action_classifier.compute_loss(logits, source_label, loss_weight=1)
+        #     action_classifier.backward(retain_graph=False)
+        #     action_classifier.compute_accuracy(logits, source_label)
+
+        for m in modalities:
+            data[m] = source_data[m].to(device)
+
+        logits, _ = action_classifier.forward(data)
+        action_classifier.compute_loss(logits, source_label, loss_weight=1)
+        action_classifier.backward(retain_graph=False)
+        action_classifier.compute_accuracy(logits, source_label)
 
         # update weights and zero gradients if total_batch samples are passed
         if gradient_accumulation_step:

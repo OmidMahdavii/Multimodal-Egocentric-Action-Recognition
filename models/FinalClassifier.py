@@ -40,15 +40,16 @@ class LSTM(nn.Module):
     def __init__(self, num_classes, num_clips):
         super().__init__()
 
-        self.model = nn.Sequential(
-            # Input shape: (num_clips, 1024)
-            nn.LSTM(input_size=1024, hidden_size=256, num_layers=2, batch_first=True),
+        self.lstm = nn.LSTM(input_size=1024, hidden_size=256, num_layers=2, batch_first=True)
+        
+        self.fc = nn.Sequential(
             nn.Linear(256, num_classes),
-            # Shape: (num_classes, 1)
             nn.Sigmoid()
         )
 
         
 
     def forward(self, x):
-        return self.model(x).squeeze(), {}
+        y, _ = self.lstm(x)
+        y = self.fc(y[:, -1, :])  # Take the output of the last time step
+        return y, {}

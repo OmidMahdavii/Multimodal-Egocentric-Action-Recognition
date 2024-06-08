@@ -31,6 +31,24 @@ class CNN(nn.Module):
 
     def forward(self, x):
         # x = x.unsqueeze(1)
-        # y = self.cnn(x)
+        # y = self.model(x)
         # return y.squeeze(), {}
-        return self.model(x), {}
+        return self.model(x).squeeze(), {}
+    
+
+class LSTM(nn.Module):
+    def __init__(self, num_classes, num_clips):
+        super().__init__()
+
+        self.model = nn.Sequential(
+            # Input shape: (num_clips, 1024)
+            nn.LSTM(input_size=1024, hidden_size=256, num_layers=2, batch_first=True),
+            nn.Linear(256, num_classes),
+            # Shape: (num_classes, 1)
+            nn.Sigmoid()
+        )
+
+        
+
+    def forward(self, x):
+        return self.model(x).squeeze(), {}

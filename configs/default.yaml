@@ -17,14 +17,14 @@ train:
   dense_sampling: # sampling version adopted in training for each modality
     RGB: True
   num_frames_per_clip: # number of frames adopted in training for each modality
-    RGB: 16
+    RGB: 5
 
 test:
   num_clips: 5 # number of clips in testing
   dense_sampling: # sampling version adopted in test for each modality
     RGB: True
   num_frames_per_clip: # number of frames adopted in test for each modality
-    RGB: 16
+    RGB: 5
 
 dataset:
   annotations_path: train_val # path for the annotations data
@@ -35,7 +35,7 @@ dataset:
   RGB:
     data_path: ??? # path to RGB data
     tmpl: "img_{:010d}.jpg" # format of RGB filenames
-    features_name: save_train_dense_k5
+    features_name: save_dense_k5
   Event: # not neeeded for the project
     rgb4e: 6
 

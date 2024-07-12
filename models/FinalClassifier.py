@@ -40,10 +40,10 @@ class LSTM(nn.Module):
     def __init__(self, num_classes, num_clips):
         super().__init__()
 
-        self.lstm = nn.LSTM(input_size=1024, hidden_size=256, num_layers=2, batch_first=True)
+        self.lstm = nn.LSTM(input_size=1024, hidden_size=128, num_layers=1, batch_first=True)
         
         self.fc = nn.Sequential(
-            nn.Linear(256, num_classes),
+            nn.Linear(128, num_classes),
             nn.Sigmoid()
         )
 

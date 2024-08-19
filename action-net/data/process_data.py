@@ -43,7 +43,12 @@ def segment_data(df, segment_length=5):
                 mask = (timestamps >= seg_start) & (timestamps < seg_stop)
                 segment[f'{arm}_readings'] = readings[mask]
                 segment[f'{arm}_timestamps'] = timestamps[mask]
-                
+            
+            # Handle the case where the number of the readings is different for the sensors
+            min_len = min(segment['myo_left_readings'].shape[0], segment['myo_right_readings'].shape[0])
+            segment['myo_left_timestamps'] = segment['myo_left_timestamps'][:min_len]
+            segment['myo_right_timestamps'] = segment['myo_right_timestamps'][:min_len]
+
             segmented_data.append(segment)
     
     return pd.DataFrame(segmented_data, index=range(len(segmented_data)))

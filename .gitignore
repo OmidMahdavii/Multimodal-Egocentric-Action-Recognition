@@ -1,1 +1,3 @@
 action-net/data/emg/*
+action-net/data/train_set.pkl
+action-net/data/test_set.pkl

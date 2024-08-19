@@ -1,4 +1,5 @@
-import pickle
+from datetime import datetime
+from statistics import mean
 from utils.logger import logger
 import torch.nn.parallel
 import torch.optim
@@ -43,8 +44,7 @@ def main():
     logger.info("Instantiating models per modality")
     for m in modalities:
         logger.info('{} Net\tModality: {}'.format(args.models[m].model, m))
-        action = args.action
-        models[m] = getattr(model_list, args.models[m].model)(num_classes, args.model, **args.model.kwargs)
+        models[m] = getattr(model_list, args.models[m].model)(num_classes)
 
     # the models are wrapped into the ActionRecognition task which manages all the training steps
     action_classifier = tasks.ActionRecognition("action-classifier", models, args.batch_size,

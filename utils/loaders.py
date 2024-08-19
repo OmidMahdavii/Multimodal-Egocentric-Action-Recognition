@@ -242,3 +242,37 @@ class EpicKitchensDataset(data.Dataset, ABC):
 
     def __len__(self):
         return len(self.video_list)
+
+
+class ActionNetEmg(data.Dataset, ABC):
+    def __init__(self, mode, dataset_conf, **kwargs):
+        """
+        mode: str (train, test/val)
+        dataset_conf must contain the following:
+            - data_path: str
+        """
+        self.mode = mode  
+        self.dataset_conf = dataset_conf
+
+        if self.mode == "train":
+            pickle_name = "train_set.pkl"
+        else:
+            pickle_name = "test_set.pkl"
+
+        self.list_file = pd.read_pickle(os.path.join(self.dataset_conf.data_path, pickle_name))
+        logger.info(f"Dataloader for {self.mode} with {len(self.list_file)} samples generated")
+        self.emg_list = [row for idx, row in self.list_file.iterrows()]
+
+    def __getitem__(self, index):
+
+        # record is a row of the pkl file containing one sample/action
+        record = self.emg_list[index]
+
+        left_arm = record['myo_left_readings']
+        right_arm = record['myo_right_readings']
+        label = record['label']
+
+        return np.concatenate(left_arm, right_arm), label
+
+    def __len__(self):
+        return len(self.emg_list)

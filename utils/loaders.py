@@ -272,7 +272,7 @@ class ActionNetEmg(data.Dataset, ABC):
         right_arm = record['myo_right_readings']
         label = record['label']
 
-        return np.concatenate((left_arm, right_arm), axis=1), label
+        return np.float32(np.concatenate((left_arm, right_arm), axis=1)), label
 
     def __len__(self):
         return len(self.emg_list)

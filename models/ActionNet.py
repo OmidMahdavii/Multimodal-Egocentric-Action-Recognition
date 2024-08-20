@@ -18,9 +18,9 @@ class EMG_LSTM(nn.Module):
 
     def forward(self, x):
         y, _ = self.lstm1(x)
-        y = self.lstm2(y[:, -1, :])  # Take the output of the last time step
+        y, _ = self.lstm2(y)
         y = self.fc(y[:, -1, :])  # Take the output of the last time step
-        return y, _
+        return y, {}
 
 
 class EMG_CNN(nn.Module):

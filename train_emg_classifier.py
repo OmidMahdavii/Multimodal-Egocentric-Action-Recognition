@@ -12,6 +12,7 @@ import numpy as np
 import os
 import models as model_list
 import tasks
+# from torch.nn.utils.rnn import pad_sequence
 
 
 # global variables among training functions
@@ -80,6 +81,18 @@ def main():
 
         validate(action_classifier, val_loader, device, action_classifier.current_iter, num_classes)
 
+# def collate_fn(batch):
+#   data, labels = zip(*batch)
+  
+#   # Convert to torch tensors
+#   data = [torch.tensor(d) for d in data]
+#   labels = torch.tensor(labels)
+  
+#   # Pad sequences to the same length
+#   data_padded = pad_sequence(data, batch_first=True)
+  
+#   return data_padded, labels
+
 def train(action_classifier, train_loader, val_loader, device, num_classes):
     """
     function to train the model
@@ -130,7 +143,7 @@ def train(action_classifier, train_loader, val_loader, device, num_classes):
         data = {}
 
         for m in modalities:
-            data[m] = source_data[m].to(device)
+            data[m] = source_data.to(device)
 
         logits, _ = action_classifier.forward(data)
         action_classifier.compute_loss(logits, source_label, loss_weight=1)
@@ -185,7 +198,7 @@ def validate(model, val_loader, device, it, num_classes):
 
             clip = {}
             for m in modalities:
-                clip[m] = data[m].to(device)
+                clip[m] = data.to(device)
 
             output, _ = model(clip)
             for m in modalities:
@@ -211,8 +224,7 @@ def validate(model, val_loader, device, it, num_classes):
     test_results = {'top1': model.accuracy.avg[1], 'top5': model.accuracy.avg[5],
                     'class_accuracies': np.array(class_accuracies)}
 
-    with open(os.path.join(args.log_dir, f'val_precision_{args.dataset.shift.split("-")[0]}-'
-                                         f'{args.dataset.shift.split("-")[-1]}.txt'), 'a+') as f:
+    with open(os.path.join(args.log_dir, 'val_precision.txt'), 'a+') as f:
         f.write("[%d/%d]\tAcc@top1: %.2f%%\n" % (it, args.num_iter, test_results['top1']))
 
     return test_results

@@ -17,40 +17,75 @@ def normalize(data):
     return normalized_data
 
 
-def segment_data(df, segment_length=5):
+def segment_data(df, segment_size=100):
+    # List to store the segmented data
     segmented_data = []
-    for i, row in df.iterrows():
-        if len(row['myo_left_timestamps']) == 0:
-            continue
-        start, stop = row['start'], row['stop']
-        duration = stop - start
-        num_segments = int(np.floor(duration / segment_length))
+
+    # Iterate over each row in the DataFrame
+    for idx, row in df.iterrows():
+        # Segment the left readings and timestamps
+        left_readings = np.array(row['myo_left_readings'])
+        left_timestamps = np.array(row['myo_left_timestamps'])
         
-        for j in range(num_segments):
-            seg_start = start + j * segment_length
-            seg_stop = seg_start + segment_length
+        # Segment the right readings and timestamps
+        right_readings = np.array(row['myo_right_readings'])
+        right_timestamps = np.array(row['myo_right_timestamps'])
+
+        # Handle the case where the number of the readings is different for the sensors
+        if left_timestamps.shape[0] < right_timestamps.shape[0]:
+            min_len = left_timestamps.shape[0]
+            final_timestamps = left_timestamps
+        else:
+            min_len = right_timestamps.shape[0]
+            final_timestamps = right_timestamps
+        
+        # Determine how many segments can be created
+        num_segments = min_len // segment_size
+        
+        for i in range(num_segments):
+            segmented_data.append({
+                'idx': idx,
+                'start': final_timestamps[i * segment_size],
+                'stop': final_timestamps[(i + 1) * segment_size - 1],
+                'myo_left_readings': left_readings[i * segment_size: (i + 1) * segment_size],
+                'myo_left_timestamps': left_timestamps[i * segment_size: (i + 1) * segment_size],
+                'myo_right_readings': right_readings[i * segment_size: (i + 1) * segment_size],
+                'myo_right_timestamps': right_timestamps[i * segment_size: (i + 1) * segment_size],
+            })
+
+    # segmented_data = []
+    # for i, row in df.iterrows():
+    #     if len(row['myo_left_timestamps']) == 0:
+    #         continue
+    #     start, stop = row['start'], row['stop']
+    #     duration = stop - start
+    #     num_segments = int(np.floor(duration / segment_length))
+        
+    #     for j in range(num_segments):
+    #         seg_start = start + j * segment_length
+    #         seg_stop = seg_start + segment_length
             
-            segment = row.copy()
-            segment['idx'] = i
-            segment['start'] = seg_start
-            segment['stop'] = seg_stop
+    #         segment = row.copy()
+    #         segment['idx'] = i
+    #         segment['start'] = seg_start
+    #         segment['stop'] = seg_stop
             
-            for arm in ['myo_left', 'myo_right']:
-                readings = np.array(row[f'{arm}_readings'])
-                timestamps = np.array(row[f'{arm}_timestamps'])
+    #         for arm in ['myo_left', 'myo_right']:
+    #             readings = np.array(row[f'{arm}_readings'])
+    #             timestamps = np.array(row[f'{arm}_timestamps'])
                 
-                # Segment the readings and timestamps
-                mask = (timestamps >= seg_start) & (timestamps < seg_stop)
-                segment[f'{arm}_readings'] = readings[mask]
-                segment[f'{arm}_timestamps'] = timestamps[mask]
+    #             # Segment the readings and timestamps
+    #             mask = (timestamps >= seg_start) & (timestamps < seg_stop)
+    #             segment[f'{arm}_readings'] = readings[mask]
+    #             segment[f'{arm}_timestamps'] = timestamps[mask]
             
-            # Handle the case where the number of the readings is different for the sensors
-            min_len = min(segment['myo_left_readings'].shape[0], segment['myo_right_readings'].shape[0])
-            segment['myo_left_timestamps'] = segment['myo_left_timestamps'][:min_len]
-            segment['myo_right_timestamps'] = segment['myo_right_timestamps'][:min_len]
-            segment['myo_left_readings'] = segment['myo_left_readings'][:min_len]
-            segment['myo_right_readings'] = segment['myo_right_readings'][:min_len]
-            segmented_data.append(segment)
+    #         # Handle the case where the number of the readings is different for the sensors
+    #         min_len = min(segment['myo_left_readings'].shape[0], segment['myo_right_readings'].shape[0])
+    #         segment['myo_left_timestamps'] = segment['myo_left_timestamps'][:min_len]
+    #         segment['myo_right_timestamps'] = segment['myo_right_timestamps'][:min_len]
+    #         segment['myo_left_readings'] = segment['myo_left_readings'][:min_len]
+    #         segment['myo_right_readings'] = segment['myo_right_readings'][:min_len]
+            # segmented_data.append(segment)
     
     return pd.DataFrame(segmented_data, index=range(len(segmented_data)))
 

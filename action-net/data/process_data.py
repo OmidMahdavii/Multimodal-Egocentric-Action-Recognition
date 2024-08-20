@@ -48,11 +48,11 @@ def segment_data(df, segment_length=5):
             min_len = min(segment['myo_left_readings'].shape[0], segment['myo_right_readings'].shape[0])
             segment['myo_left_timestamps'] = segment['myo_left_timestamps'][:min_len]
             segment['myo_right_timestamps'] = segment['myo_right_timestamps'][:min_len]
-
+            segment['myo_left_readings'] = segment['myo_left_readings'][:min_len]
+            segment['myo_right_readings'] = segment['myo_right_readings'][:min_len]
             segmented_data.append(segment)
     
     return pd.DataFrame(segmented_data, index=range(len(segmented_data)))
-
 
 
 labels_dict = { 'Spread': 0,

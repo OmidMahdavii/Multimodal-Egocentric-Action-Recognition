@@ -24,33 +24,30 @@ class EMG_LSTM(nn.Module):
 
 
 class EMG_CNN(nn.Module):
-    def __init__(self, num_classes, num_clips):
+    def __init__(self, num_classes):
         super().__init__()
 
-        self.model = nn.Sequential(
-            # Input shape: (num_clips, 1024)
-            nn.Conv1d(in_channels=num_clips, out_channels=num_clips*2, kernel_size=6, stride=4, padding=1),
-            nn.BatchNorm1d(num_clips*2),
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_channels=1, out_channels=16, kernel_size=(3, 3), padding=(1, 1)), 
             nn.ReLU(),
-            # Shape: (num_clips*2, 256)
-            nn.Conv1d(in_channels=num_clips*2, out_channels=num_clips*4, kernel_size=6, stride=4, padding=1),
-            nn.BatchNorm1d(num_clips*4),
-            nn.ReLU(),
-            # Shape: (num_clips*4, 64)
-            nn.Conv1d(in_channels=num_clips*4, out_channels=num_clips*8, kernel_size=6, stride=4, padding=1),
-            nn.BatchNorm1d(num_clips*8),
-            nn.ReLU(),
-            # Shape: (num_clips*8, 16)
-            nn.Conv1d(in_channels=num_clips*8, out_channels=num_classes, kernel_size=16, stride=1, padding=0),
-            # Shape: (num_classes, 1)
-            nn.Sigmoid()
+            nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
+        )
+        
+        self.lstm = nn.LSTM(input_size=400, hidden_size=50, batch_first=True)
+        
+        self.fc = nn.Sequential(
+            nn.Dropout(0.2),
+            nn.Linear(50, num_classes),
+            nn.Softmax()
         )
 
-        
+
 
     def forward(self, x):
-        # x = x.unsqueeze(1)
-        # y = self.model(x)
-        # return y.squeeze(), {}
-        return self.model(x).squeeze(), {}
-    
+        y = x.unsqueeze(1)
+        y = self.conv(y)
+        # Flatten the output for the LSTM
+        y = y.view(y.size(0), y.size(1), -1)
+        y, _ = self.lstm(y)
+        y = self.fc(y[:, -1, :]) 
+        return y, {}

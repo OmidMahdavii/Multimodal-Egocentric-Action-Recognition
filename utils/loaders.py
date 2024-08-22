@@ -244,35 +244,93 @@ class EpicKitchensDataset(data.Dataset, ABC):
         return len(self.video_list)
 
 
-class ActionNetEmg(data.Dataset, ABC):
-    def __init__(self, mode, dataset_conf, **kwargs):
-        """
-        mode: str (train, test/val)
-        dataset_conf must contain the following:
-            - data_path: str
-        """
+class ActionNet(data.Dataset, ABC):
+    def __init__(self, modalities, mode, dataset_conf, transform=None, load_feat=False, additional_info=False, **kwargs):
+        self.modalities = modalities 
         self.mode = mode  
         self.dataset_conf = dataset_conf
+        self.additional_info = additional_info
 
         if self.mode == "train":
             pickle_name = "train_set.pkl"
+        elif kwargs.get('save', None) is not None:
+            pickle_name = "multimodal_" + kwargs["save"] + "_set.pkl"
         else:
             pickle_name = "test_set.pkl"
 
-        self.list_file = pd.read_pickle(os.path.join(self.dataset_conf.data_path, pickle_name))
+        self.list_file = pd.read_pickle(os.path.join(self.dataset_conf.annotations_path, pickle_name))
         logger.info(f"Dataloader for {self.mode} with {len(self.list_file)} samples generated")
-        self.emg_list = [row for idx, row in self.list_file.iterrows()]
+        self.record_list = [row for idx, row in self.list_file.iterrows()]
+        # self.video_list = [row for idx, row in self.list_file[self.list_file['subject'] == 'S04_1'].iterrows()]
+        self.transform = transform
+        self.load_feat = load_feat
+
+        if self.load_feat and 'RGB' in self.modalities:
+            self.model_features = pd.DataFrame(pd.read_pickle(os.path.join("action-net\saved_features", self.dataset_conf.features_name + 
+                                                                           "_" + pickle_name)))
+            self.model_features = pd.merge(self.model_features, self.list_file, how="inner", left_index='index', right_on=True)
 
     def __getitem__(self, index):
-
-        # record is a row of the pkl file containing one sample/action
-        record = self.emg_list[index]
-
-        left_arm = record['myo_left_readings']
-        right_arm = record['myo_right_readings']
+        samples = {}
+        record = self.record_list[index]
         label = record['label']
 
-        return np.float32(np.concatenate((left_arm, right_arm), axis=1)), label
+        if 'EMG' in self.modalities:
+            left_arm = record['myo_left_readings']
+            right_arm = record['myo_right_readings']
+            samples['EMG'] = np.float32(np.concatenate((left_arm, right_arm), axis=1))
 
+        if 'RGB' in self.modalities:            
+            if self.load_feat:
+                sample_row = self.model_features[self.model_features.index == record.name]
+                assert len(sample_row) == 1
+                samples['RGB'] = sample_row['features'].values[0]
+            else:
+                segment_indices = self.get_frame_indices(record)
+                img = self.get('RGB', segment_indices)
+                samples['RGB'] = img
+
+        if self.additional_info:
+            return samples, label, record.name
+        else:
+            return samples, label
+    
+    def get_frame_indices(self, record, fps=30, first_frame=1655239114.183343):
+        start_time = record['start'] - first_frame
+        stop_time = record['stop'] - first_frame
+        start_frame = int(start_time * fps)
+        stop_frame = int(stop_time * fps)
+        return(list(range(start_frame, stop_frame)))
+    
+    def get(self, modality, indices):
+        images = list()
+        for frame_index in indices:
+            p = int(frame_index)
+            frame = self._load_data('RGB', p)
+            images.extend(frame)
+        process_data = self.transform[modality](images)
+        return process_data
+        
+    def _load_data(self, modality, idx):
+        data_path = self.dataset_conf[modality].data_path
+        tmpl = self.dataset_conf[modality].tmpl
+
+        if modality == 'RGB':
+            try:
+                img = Image.open(os.path.join(data_path, tmpl.format(idx))) \
+                    .convert('RGB')
+            except FileNotFoundError:
+                print("Img not found")
+                max_idx_video = int(sorted(glob.glob(os.path.join(data_path, "img_*")))[-1].split("_")[-1].split(".")[0])
+                if idx > max_idx_video:
+                    img = Image.open(os.path.join(data_path, tmpl.format(max_idx_video))) \
+                        .convert('RGB')
+                else:
+                    raise FileNotFoundError
+            return [img]
+        
+        else:
+            raise NotImplementedError("Modality not implemented")
+    
     def __len__(self):
-        return len(self.emg_list)
+        return len(self.record_list)

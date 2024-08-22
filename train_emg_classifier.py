@@ -4,7 +4,7 @@ from utils.logger import logger
 import torch.nn.parallel
 import torch.optim
 import torch
-from utils.loaders import ActionNetEmg
+from utils.loaders import ActionNet
 from utils.args import args
 from utils.utils import pformat_dict
 import utils
@@ -12,11 +12,13 @@ import numpy as np
 import os
 import models as model_list
 import tasks
-# from torch.nn.utils.rnn import pad_sequence
+import wandb
+from torch.nn.utils.rnn import pad_sequence
 
 
 # global variables among training functions
 training_iterations = 0
+modalities = None
 np.random.seed(13696641)
 torch.manual_seed(13696641)
 
@@ -32,9 +34,13 @@ def init_operations():
         logger.debug('Using only these GPUs: {}'.format(args.gpus))
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpus
 
+    if args.wandb_name is not None:
+        wandb.init(group=args.wandb_name, dir=args.wandb_dir)
+        wandb.run.name = args.name 
+
 
 def main():
-    global training_iterations
+    global training_iterations, modalities
     init_operations()
     modalities = args.modality
 
@@ -52,23 +58,17 @@ def main():
                                                 args.total_batch, args.models_dir, num_classes,
                                                 1, args.models, args=args)
     action_classifier.load_on_gpu(device)
-    if args.resume_from is not None:
-        action_classifier.load_last_model(args.resume_from)
  
     if args.action == "train":
-        # resume_from argument is adopted in case of restoring from a checkpoint
         if args.resume_from is not None:
             action_classifier.load_last_model(args.resume_from)
-        # define number of iterations I'll do with the actual batch: we do not reason with epochs but with iterations
-        # i.e. number of batches passed
-        # notice, here it is multiplied by tot_batch/batch_size since gradient accumulation technique is adopted
+
         training_iterations = args.num_iter * (args.total_batch // args.batch_size)
                
-        # all dataloaders are generated here
-        train_loader = torch.utils.data.DataLoader(ActionNetEmg('train', args.dataset), batch_size=args.batch_size, shuffle=True,
+        train_loader = torch.utils.data.DataLoader(ActionNet(modalities, 'train', args.dataset, load_feat=True), batch_size=args.batch_size, collate_fn=collate_fn, shuffle=True,
                                                    num_workers=args.dataset.workers, pin_memory=True, drop_last=True)
 
-        val_loader = torch.utils.data.DataLoader(ActionNetEmg('test', args.dataset), batch_size=args.batch_size, shuffle=False,
+        val_loader = torch.utils.data.DataLoader(ActionNet(modalities, 'test', args.dataset, load_feat=True), batch_size=args.batch_size, collate_fn=collate_fn, shuffle=False,
                                                  num_workers=args.dataset.workers, pin_memory=True, drop_last=False)
                
         train(action_classifier, train_loader, val_loader, device, num_classes)
@@ -76,22 +76,22 @@ def main():
     elif args.action == "test":
         if args.resume_from is not None:
             action_classifier.load_last_model(args.resume_from)
-        val_loader = torch.utils.data.DataLoader(ActionNetEmg('test', args.dataset), batch_size=args.batch_size, shuffle=False,
+        val_loader = torch.utils.data.DataLoader(ActionNet(modalities, 'test', args.dataset, load_feat=True), batch_size=args.batch_size, collate_fn=collate_fn, shuffle=False,
                                                  num_workers=args.dataset.workers, pin_memory=True, drop_last=False)
 
         validate(action_classifier, val_loader, device, action_classifier.current_iter, num_classes)
 
-# def collate_fn(batch):
-#   data, labels = zip(*batch)
+def collate_fn(batch):
+  data, labels = zip(*batch)
   
-#   # Convert to torch tensors
-#   data = [torch.tensor(d) for d in data]
-#   labels = torch.tensor(labels)
+  # Convert to torch tensors
+  data = [torch.tensor(d) for d in data]
+  labels = torch.tensor(labels)
   
-#   # Pad sequences to the same length
-#   data_padded = pad_sequence(data, batch_first=True)
+  # Pad sequences to the same length
+  data_padded = pad_sequence(data, batch_first=True)
   
-#   return data_padded, labels
+  return data_padded, labels
 
 def train(action_classifier, train_loader, val_loader, device, num_classes):
     """
@@ -102,32 +102,24 @@ def train(action_classifier, train_loader, val_loader, device, num_classes):
     device: device on which you want to test
     num_classes: int, number of classes in the classification problem
     """
-    global training_iterations
+    global training_iterations, modalities
 
-    modalities = args.modality
     data_loader_source = iter(train_loader)
     action_classifier.train(True)
     action_classifier.zero_grad()
     iteration = action_classifier.current_iter * (args.total_batch // args.batch_size)
 
-    # the batch size should be total_batch but batch accumulation is done with batch size = batch_size.
-    # real_iter is the number of iterations if the batch size was really total_batch
     for i in range(iteration, training_iterations):
-        # iteration w.r.t. the paper (w.r.t the bs to simulate).... i is the iteration with the actual bs( < tot_bs)
         real_iter = (i + 1) / (args.total_batch // args.batch_size)
         if real_iter == args.lr_steps:
-            # learning rate decay at iteration = lr_steps
             action_classifier.reduce_learning_rate()
-        # gradient_accumulation_step is a bool used to understand if we accumulated at least total_batch
-        # samples' gradient
+
         gradient_accumulation_step = real_iter.is_integer()
 
         """
         Retrieve the data from the loaders
         """
         start_t = datetime.now()
-        # the following code is necessary as we do not reason in epochs so as soon as the dataloader is finished we need
-        # to redefine the iterator
         try:
             source_data, source_label = next(data_loader_source)
         except StopIteration:
@@ -186,7 +178,8 @@ def validate(model, val_loader, device, it, num_classes):
     it: int, iteration among the training num_iter at which the model is tested
     num_classes: int, number of classes in the classification problem
     """
-    modalities = args.modality
+    global modalities
+
     model.reset_acc()
     model.train(False)
     logits = {}
@@ -198,7 +191,7 @@ def validate(model, val_loader, device, it, num_classes):
 
             clip = {}
             for m in modalities:
-                clip[m] = data.to(device)
+                clip[m] = data[m].to(device)
 
             output, _ = model(clip)
             for m in modalities:

@@ -1,5 +1,5 @@
 action: train # train or test
-name: emg_classifier
+name: classify_emg_lstm
 modality: ["EMG"] # modality used
 total_batch: 128 # total batch size if training is done with gradient accumulation
 batch_size: 32 # batch size for the forward
@@ -8,18 +8,21 @@ resume_from: null # checkpoint directory
 models_dir: null # directory containing all the models
 
 num_iter: 5000 # number of training iterations with total_batch size
-lr_steps: 3000 # steps before reducing learning rate
+lr_steps: 2000 # steps before reducing learning rate
 eval_freq: 50 # evaluation frequency
 
 dataset:
-  data_path: action-net/data
+  annotations_path: action-net/data
+  shift: null
   workers: 4
+  data_path: null
+  features_name: null
 
 models:
   EMG:
     model: EMG_LSTM
     kwargs: {}
-    lr: 0.01
+    lr: 0.001
     sgd_momentum: 0.9
     weight_decay: 1e-7
 

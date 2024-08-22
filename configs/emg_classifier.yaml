@@ -13,10 +13,11 @@ eval_freq: 50 # evaluation frequency
 
 dataset:
   annotations_path: action-net/data
-  shift: null
+  shift: D1-D1
   workers: 4
-  data_path: null
   features_name: null
+  RGB:
+    data_path: null
 
 models:
   EMG:

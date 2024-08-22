@@ -65,33 +65,37 @@ def main():
 
         training_iterations = args.num_iter * (args.total_batch // args.batch_size)
                
-        train_loader = torch.utils.data.DataLoader(ActionNet(modalities, 'train', args.dataset, load_feat=True), batch_size=args.batch_size, collate_fn=collate_fn, shuffle=True,
-                                                   num_workers=args.dataset.workers, pin_memory=True, drop_last=True)
+        train_loader = torch.utils.data.DataLoader(ActionNet(modalities, 'train', args.dataset, load_feat=True), batch_size=args.batch_size, 
+                                                   collate_fn=collate_fn, shuffle=True, num_workers=args.dataset.workers, 
+                                                   pin_memory=True, drop_last=True)
 
-        val_loader = torch.utils.data.DataLoader(ActionNet(modalities, 'test', args.dataset, load_feat=True), batch_size=args.batch_size, collate_fn=collate_fn, shuffle=False,
-                                                 num_workers=args.dataset.workers, pin_memory=True, drop_last=False)
+        val_loader = torch.utils.data.DataLoader(ActionNet(modalities, 'test', args.dataset, load_feat=True), batch_size=args.batch_size, 
+                                                 collate_fn=collate_fn, shuffle=False, num_workers=args.dataset.workers, 
+                                                 pin_memory=True, drop_last=False)
                
         train(action_classifier, train_loader, val_loader, device, num_classes)
 
     elif args.action == "test":
         if args.resume_from is not None:
             action_classifier.load_last_model(args.resume_from)
-        val_loader = torch.utils.data.DataLoader(ActionNet(modalities, 'test', args.dataset, load_feat=True), batch_size=args.batch_size, collate_fn=collate_fn, shuffle=False,
-                                                 num_workers=args.dataset.workers, pin_memory=True, drop_last=False)
+        val_loader = torch.utils.data.DataLoader(ActionNet(modalities, 'test', args.dataset, load_feat=True), batch_size=args.batch_size, 
+                                                 collate_fn=collate_fn, shuffle=False, num_workers=args.dataset.workers, 
+                                                 pin_memory=True, drop_last=False)
 
         validate(action_classifier, val_loader, device, action_classifier.current_iter, num_classes)
 
 def collate_fn(batch):
-  data, labels = zip(*batch)
-  
-  # Convert to torch tensors
-  data = [torch.tensor(d) for d in data]
-  labels = torch.tensor(labels)
-  
-  # Pad sequences to the same length
-  data_padded = pad_sequence(data, batch_first=True)
-  
-  return data_padded, labels
+    data, labels = zip(*batch)
+
+    labels = torch.tensor(labels)
+    data_dict = {}
+    data_padded = {}
+    for m in modalities:
+        data_dict[m] = [torch.tensor(d[m]) for d in data]
+        # Pad sequences to the same length
+        data_padded[m] = pad_sequence(data_dict[m], batch_first=True)
+
+    return data_padded, labels
 
 def train(action_classifier, train_loader, val_loader, device, num_classes):
     """
@@ -135,7 +139,7 @@ def train(action_classifier, train_loader, val_loader, device, num_classes):
         data = {}
 
         for m in modalities:
-            data[m] = source_data.to(device)
+            data[m] = source_data[m].to(device)
 
         logits, _ = action_classifier.forward(data)
         action_classifier.compute_loss(logits, source_label, loss_weight=1)

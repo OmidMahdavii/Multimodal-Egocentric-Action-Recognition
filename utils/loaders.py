@@ -251,10 +251,10 @@ class ActionNet(data.Dataset, ABC):
         self.dataset_conf = dataset_conf
         self.additional_info = additional_info
 
-        if self.mode == "train":
-            pickle_name = "train_set.pkl"
-        elif kwargs.get('save', None) is not None:
+        if kwargs.get('save', None) is not None:
             pickle_name = "multimodal_" + kwargs["save"] + "_set.pkl"
+        elif self.mode == "train":
+            pickle_name = "train_set.pkl"
         else:
             pickle_name = "test_set.pkl"
 
@@ -321,7 +321,7 @@ class ActionNet(data.Dataset, ABC):
                     .convert('RGB')
             except FileNotFoundError:
                 print("Img not found")
-                max_idx_video = int(sorted(glob.glob(os.path.join(data_path, "img_*")))[-1].split("_")[-1].split(".")[0])
+                max_idx_video = int(sorted(glob.glob(os.path.join(data_path, "frame_*")))[-1].split("_")[-1].split(".")[0])
                 if idx > max_idx_video:
                     img = Image.open(os.path.join(data_path, tmpl.format(max_idx_video))) \
                         .convert('RGB')

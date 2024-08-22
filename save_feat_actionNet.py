@@ -35,7 +35,7 @@ def main():
     init_operations()
     modalities = args.modality
 
-    num_classes = 12
+    num_classes = 8 # set the number of classes to match the pretrained weights
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     models = {}

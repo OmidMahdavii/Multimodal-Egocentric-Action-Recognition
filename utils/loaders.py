@@ -259,16 +259,17 @@ class ActionNet(data.Dataset, ABC):
             pickle_name = "test_set.pkl"
 
         self.list_file = pd.read_pickle(os.path.join(self.dataset_conf.annotations_path, pickle_name))
+        if 'RGB' in self.modalities:
+            self.list_file = self.list_file[self.list_file['subject'] == 'S04_1']
         logger.info(f"Dataloader for {self.mode} with {len(self.list_file)} samples generated")
         self.record_list = [row for idx, row in self.list_file.iterrows()]
-        # self.video_list = [row for idx, row in self.list_file[self.list_file['subject'] == 'S04_1'].iterrows()]
         self.transform = transform
         self.load_feat = load_feat
 
         if self.load_feat and 'RGB' in self.modalities:
-            self.model_features = pd.DataFrame(pd.read_pickle(os.path.join("action-net\saved_features", self.dataset_conf.features_name + 
-                                                                           "_" + pickle_name)))
-            self.model_features = pd.merge(self.model_features, self.list_file, how="inner", left_index='index', right_on=True)
+            self.model_features = pd.DataFrame(pd.read_pickle(os.path.join("action-net", "saved_features", self.dataset_conf.features_name
+                                                                           + "_" + self.mode + ".pkl"))['features'])
+            self.model_features = pd.merge(self.model_features, self.list_file, how="inner", left_on='index', right_index=True)
 
     def __getitem__(self, index):
         samples = {}
@@ -284,7 +285,7 @@ class ActionNet(data.Dataset, ABC):
             if self.load_feat:
                 sample_row = self.model_features[self.model_features.index == record.name]
                 assert len(sample_row) == 1
-                samples['RGB'] = sample_row['features'].values[0]
+                samples['RGB'] = sample_row['featuresRGB'].values[0]
             else:
                 segment_indices = self.get_frame_indices(record)
                 img = self.get('RGB', segment_indices)

@@ -15,7 +15,7 @@ dataset:
   annotations_path: action-net/data
   shift: D1-D1
   workers: 4
-  features_name: null
+  features_name: save_actionNet
   RGB:
     data_path: null
 

@@ -89,6 +89,7 @@ def save_feat(model, loader, device, it, num_classes):
         for i_val, (data, label, record_idx) in enumerate(loader):
             label = label.to(device)
             label[label > 7] = 7 # We are interested in the features and accuracy is not important
+                                 # This will cause a division by 0 error in the calculation of accuracy but the features will be saved
 
             for m in modalities:
                 batch, _, height, width = data[m].shape
@@ -112,7 +113,7 @@ def save_feat(model, loader, device, it, num_classes):
             for i in range(batch):
                 sample = {"index": int(record_idx[i].cpu().detach().numpy())}
                 for m in modalities:
-                    sample["features" + m] = features[m][:, i].cpu().detach().numpy()
+                    sample["features" + m] = features[m][i, :].cpu().detach().numpy()
                 results_dict["features"].append(sample)
             num_samples += batch
 
@@ -123,7 +124,7 @@ def save_feat(model, loader, device, it, num_classes):
                                                                           model.accuracy.avg[1], model.accuracy.avg[5]))
 
         os.makedirs("saved_features", exist_ok=True)
-        pickle.dump(results_dict, open(os.path.join("action-net\saved_features", args.name + "_" +
+        pickle.dump(results_dict, open(os.path.join("action-net", "saved_features", args.name + "_" +
                                                     args.split + ".pkl"), 'wb'))
 
         class_accuracies = [(x / y) * 100 for x, y in zip(model.accuracy.correct, model.accuracy.total)]

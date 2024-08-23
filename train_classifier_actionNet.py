@@ -70,9 +70,12 @@ def main():
         train_loader = torch.utils.data.DataLoader(ActionNet(modalities, 'train', args.dataset, load_feat=True), batch_size=args.batch_size, 
                                                    collate_fn=collate_fn, shuffle=True, num_workers=args.dataset.workers, 
                                                    pin_memory=True, drop_last=True)
+        # train_loader = torch.utils.data.DataLoader(ActionNet(modalities, 'train', args.dataset, load_feat=True), batch_size=args.batch_size, 
+        #                                            sampler=define_sampler(), collate_fn=collate_fn, shuffle=False, num_workers=args.dataset.workers, 
+        #                                            pin_memory=True, drop_last=True)
 
         val_loader = torch.utils.data.DataLoader(ActionNet(modalities, 'test', args.dataset, load_feat=True), batch_size=args.batch_size, 
-                                                 sampler=define_sampler(), collate_fn=collate_fn, shuffle=False, num_workers=args.dataset.workers, 
+                                                 collate_fn=collate_fn, shuffle=False, num_workers=args.dataset.workers, 
                                                  pin_memory=True, drop_last=False)
                
         train(action_classifier, train_loader, val_loader, device, num_classes)
@@ -86,15 +89,15 @@ def main():
 
         validate(action_classifier, val_loader, device, action_classifier.current_iter, num_classes)
 
-def define_sampler():
-    class_sample_counts = [193, 870, 257, 487, 179, 34, 191, 547, 53, 199, 63, 223]
-    # Calculate the inverse frequency for each class
-    weights = 1.0 / torch.tensor(class_sample_counts, dtype=torch.float)
-    labels = torch.tensor(pd.read_pickle(os.path.join(args.dataset.annotations_path, "train_set.pkl")))
-    # Assign weights to each sample based on its label
-    sample_weights = weights[labels]
-    sampler = WeightedRandomSampler(weights=sample_weights, num_samples=len(sample_weights), replacement=True)
-    return sampler
+# def define_sampler():
+#     class_sample_counts = [193, 870, 257, 487, 179, 34, 191, 547, 53, 199, 63, 223]
+#     # Calculate the inverse frequency for each class
+#     weights = 1.0 / torch.tensor(class_sample_counts, dtype=torch.float)
+#     labels = torch.tensor(pd.read_pickle(os.path.join(args.dataset.annotations_path, "train_set.pkl"))['label'])
+#     # Assign weights to each sample based on its label
+#     sample_weights = weights[labels]
+#     sampler = WeightedRandomSampler(weights=sample_weights, num_samples=len(sample_weights), replacement=True)
+#     return sampler
 
 def collate_fn(batch):
     data, labels = zip(*batch)

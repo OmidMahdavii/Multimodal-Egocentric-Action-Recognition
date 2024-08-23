@@ -22,7 +22,7 @@ def segment_data(df, segment_size=5):
     segmented_data = []
 
     for i, row in df.iterrows():
-        if len(row['myo_left_timestamps']) == 0:
+        if row['description'] not in labels_dict:
             continue
         start, stop = row['start'], row['stop']
         duration = stop - start
@@ -36,6 +36,7 @@ def segment_data(df, segment_size=5):
             segment['idx'] = i
             segment['start'] = seg_start
             segment['stop'] = seg_stop
+            segment['label'] = labels_dict[row['description']]
             
             for arm in ['myo_left', 'myo_right']:
                 readings = np.array(row[f'{arm}_readings'])
@@ -89,18 +90,28 @@ def segment_data(df, segment_size=5):
     return pd.DataFrame(segmented_data, index=range(len(segmented_data)))
 
 
-labels_dict = { 'Spread': 0,
-                'Get/Put': 1,
-                'Clear': 2,
-                'Slice': 3,
-                'Clean': 4,
-                'Pour': 5,
-                'Load': 6,
-                'Peel': 7,
-                'Open/Close': 8,
-                'Set': 9,
-                'Stack': 10,
-                'Unload': 11
+labels_dict = { 'Get/replace items from refrigerator/cabinets/drawers': 0,
+                'Get items from refrigerator/cabinets/drawers': 0,
+                'Peel a cucumber': 1,
+                'Clear cutting board': 2,
+                'Slice a cucumber': 3,
+                'Peel a potato': 4,
+                'Slice a potato': 5,
+                'Slice bread': 6,
+                'Spread almond butter on a bread slice': 7,
+                'Spread jelly on a bread slice': 8,
+                'Open/close a jar of almond butter': 9,
+                'Open a jar of almond butter': 9,
+                'Pour water from a pitcher into a glass': 10,
+                'Clean a plate with a sponge': 11,
+                'Clean a plate with a towel': 12,
+                'Clean a pan with a sponge': 13,
+                'Clean a pan with a towel': 14,
+                'Get items from cabinets: 3 each large/small plates, bowls, mugs, glasses, sets of utensils': 15,
+                'Set table: 3 each large/small plates, bowls, mugs, glasses, sets of utensils': 16,
+                'Stack on table: 3 each large/small plates, bowls': 17,
+                'Load dishwasher: 3 each large/small plates, bowls, mugs, glasses, sets of utensils': 18,
+                'Unload dishwasher: 3 each large/small plates, bowls, mugs, glasses, sets of utensils': 19,
 }
 
 emg_data = {'S00_2': None,
@@ -167,7 +178,6 @@ for i, row in train_df.iterrows():
 
     data = df[df['idx'] == row['index']].copy()
     data['subject'] = subject
-    data['label'] = labels_dict[row['labels']]
     train_set = pd.concat([train_set, data], ignore_index=True)
 
 for i, row in test_df.iterrows():
@@ -176,7 +186,6 @@ for i, row in test_df.iterrows():
 
     data = df[df['idx'] == row['index']].copy()
     data['subject'] = subject
-    data['label'] = labels_dict[row['labels']]
     test_set = pd.concat([test_set, data], ignore_index=True)
 
 

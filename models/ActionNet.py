@@ -1,6 +1,21 @@
 from torch import nn
 
 
+class RGB_Classifier(nn.Module):
+    def __init__(self, num_classes):
+        super().__init__()
+
+        self.model = nn.Sequential(
+            nn.Linear(1024, num_classes),
+            nn.Softmax()
+        )
+
+        
+
+    def forward(self, x):
+        return self.model(x), {}
+
+
 class EMG_LSTM(nn.Module):
     def __init__(self, num_classes):
         super().__init__()

@@ -298,8 +298,8 @@ class ActionNet(data.Dataset, ABC):
     def get_frame_indices(self, record, fps=30, first_frame=1655239114.183343):
         start_time = record['start'] - first_frame
         stop_time = record['stop'] - first_frame
-        start_frame = int(start_time * fps)
-        stop_frame = int(stop_time * fps)
+        start_frame = int(start_time * fps) + 1
+        stop_frame = int(stop_time * fps) + 1
         return(list(range(start_frame, stop_frame)))
     
     def get(self, modality, indices):

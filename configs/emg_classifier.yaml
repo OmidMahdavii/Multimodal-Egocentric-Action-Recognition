@@ -20,6 +20,12 @@ dataset:
     data_path: null
 
 models:
+  RGB:
+    model: RGB_Classifier
+    kwargs: {}
+    lr: 0.001
+    sgd_momentum: 0.9
+    weight_decay: 1e-7
   EMG:
     model: EMG_LSTM
     kwargs: {}

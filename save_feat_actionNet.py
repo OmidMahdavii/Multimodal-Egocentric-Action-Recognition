@@ -88,11 +88,11 @@ def save_feat(model, loader, device, it, num_classes):
     with torch.no_grad():
         for i_val, (data, label, record_idx) in enumerate(loader):
             label = label.to(device)
+            label[label > 7] = 7 # We are interested in the features and accuracy is not important
 
             for m in modalities:
-                batch, num_frames, height, width = data[m].shape
-                data[m] = data[m].reshape(batch, 1, num_frames, -1, height, width)
-                data[m] = data[m].permute(1, 0, 3, 2, 4, 5)
+                batch, _, height, width = data[m].shape
+                data[m] = data[m].reshape(batch, 3, -1, height, width)
 
                 logits[m] = torch.zeros((1, batch, num_classes)).to(device)
                 features[m] = torch.zeros((1, batch, model.task_models[m]

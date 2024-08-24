@@ -251,16 +251,18 @@ class ActionNet(data.Dataset, ABC):
         self.dataset_conf = dataset_conf
         self.additional_info = additional_info
 
-        if kwargs.get('save', None) is not None:
-            pickle_name = "multimodal_" + kwargs["save"] + "_set.pkl"
+        # if kwargs.get('save', None) is not None:
+        #     pickle_name = "multimodal_" + kwargs["save"] + "_set.pkl"
+        if 'RGB' in self.modalities:
+            pickle_name = "multimodal_" + self.mode + "_set.pkl"
         elif self.mode == "train":
             pickle_name = "train_set.pkl"
         else:
             pickle_name = "test_set.pkl"
 
         self.list_file = pd.read_pickle(os.path.join(self.dataset_conf.annotations_path, pickle_name))
-        if 'RGB' in self.modalities:
-            self.list_file = self.list_file[self.list_file['subject'] == 'S04_1']
+        # if 'RGB' in self.modalities:
+        #     self.list_file = self.list_file[self.list_file['subject'] == 'S04_1']
         logger.info(f"Dataloader for {self.mode} with {len(self.list_file)} samples generated")
         self.record_list = [row for idx, row in self.list_file.iterrows()]
         self.transform = transform
@@ -283,7 +285,7 @@ class ActionNet(data.Dataset, ABC):
 
         if 'RGB' in self.modalities:            
             if self.load_feat:
-                sample_row = self.model_features[self.model_features.index == record.name]
+                sample_row = self.model_features[self.model_features['index'] == record.name]
                 assert len(sample_row) == 1
                 samples['RGB'] = sample_row['featuresRGB'].values[0]
             else:

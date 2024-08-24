@@ -50,9 +50,12 @@ def main():
 
     models = {}
     logger.info("Instantiating models per modality")
-    for m in modalities:
-        logger.info('{} Net\tModality: {}'.format(args.models[m].model, m))
-        models[m] = getattr(model_list, args.models[m].model)(num_classes)
+    if args.early_fusion:
+        models['fusion'] = getattr(model_list, args.models['fusion'].model)(num_classes)
+    else:
+      for m in modalities:
+          logger.info('{} Net\tModality: {}'.format(args.models[m].model, m))
+          models[m] = getattr(model_list, args.models[m].model)(num_classes)
 
     # the models are wrapped into the ActionRecognition task which manages all the training steps
     action_classifier = tasks.ActionRecognition("action-classifier", models, args.batch_size,
@@ -67,11 +70,11 @@ def main():
         training_iterations = args.num_iter * (args.total_batch // args.batch_size)
                
         train_loader = torch.utils.data.DataLoader(ActionNet(modalities, 'train', args.dataset, load_feat=True), batch_size=args.batch_size, 
-                                                   collate_fn=collate_fn, shuffle=True, num_workers=args.dataset.workers, 
+                                                   shuffle=True, num_workers=args.dataset.workers, 
                                                    pin_memory=True, drop_last=True)
 
         val_loader = torch.utils.data.DataLoader(ActionNet(modalities, 'test', args.dataset, load_feat=True), batch_size=args.batch_size, 
-                                                 collate_fn=collate_fn, shuffle=False, num_workers=args.dataset.workers, 
+                                                 shuffle=False, num_workers=args.dataset.workers, 
                                                  pin_memory=True, drop_last=False)
                
         train(action_classifier, train_loader, val_loader, device, num_classes)
@@ -80,23 +83,10 @@ def main():
         if args.resume_from is not None:
             action_classifier.load_last_model(args.resume_from)
         val_loader = torch.utils.data.DataLoader(ActionNet(modalities, 'test', args.dataset, load_feat=True), batch_size=args.batch_size, 
-                                                 collate_fn=collate_fn, shuffle=False, num_workers=args.dataset.workers, 
+                                                 shuffle=False, num_workers=args.dataset.workers, 
                                                  pin_memory=True, drop_last=False)
 
         validate(action_classifier, val_loader, device, action_classifier.current_iter, num_classes)
-
-def collate_fn(batch):
-    data, labels = zip(*batch)
-
-    labels = torch.tensor(labels)
-    data_dict = {}
-    data_padded = {}
-    for m in modalities:
-        data_dict[m] = [torch.tensor(d[m]) for d in data]
-        # Pad sequences to the same length
-        data_padded[m] = pad_sequence(data_dict[m], batch_first=True)
-
-    return data_padded, labels
 
 def train(action_classifier, train_loader, val_loader, device, num_classes):
     """
@@ -142,6 +132,14 @@ def train(action_classifier, train_loader, val_loader, device, num_classes):
         for m in modalities:
             data[m] = source_data[m].to(device)
 
+        if args.early_fusion:
+            emg_feat = data['EMG']
+            rgb_feat = data['RGB']
+            rgb_feat = rgb_feat.unsqueeze(1)  # (1, 1024)
+            rgb_feat = rgb_feat.repeat(1, 100, 1)  # (100, 1024)
+            fused_features = torch.cat((emg_feat, rgb_feat), dim=2)  # (100, 1040)
+            data = {'fusion': fused_features}
+        
         logits, _ = action_classifier.forward(data)
         action_classifier.compute_loss(logits, source_label, loss_weight=1)
         action_classifier.backward(retain_graph=False)
@@ -198,9 +196,21 @@ def validate(model, val_loader, device, it, num_classes):
             for m in modalities:
                 clip[m] = data[m].to(device)
 
+            if args.early_fusion:
+                emg_feat = clip['EMG']
+                rgb_feat = clip['RGB']
+                rgb_feat = rgb_feat.unsqueeze(1)
+                rgb_feat = rgb_feat.repeat(1, 100, 1)
+                fused_features = torch.cat((emg_feat, rgb_feat), dim=2)
+                clip = {'fusion': fused_features}
+            
             output, _ = model(clip)
-            for m in modalities:
-                logits[m] = output[m]
+
+            if args.early_fusion:
+                logits['fusion'] = output['fusion']
+            else:
+                for m in modalities:
+                    logits[m] = output[m]
 
             model.compute_accuracy(logits, label)
 

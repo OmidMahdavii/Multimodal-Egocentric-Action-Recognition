@@ -14,7 +14,6 @@ import os
 import models as model_list
 import tasks
 import wandb
-from torch.nn.utils.rnn import pad_sequence
 
 
 # global variables among training functions

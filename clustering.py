@@ -20,7 +20,7 @@ def optimalK(data, max_k):
     plt.show()
 
 
-features_df = pd.DataFrame(pd.read_pickle('saved_features\save_train_dense_k5_D1_train.pkl')['features'])[["features_RGB"]]
+features_df = pd.DataFrame(pd.read_pickle('saved_features\save_train_dense_k25_D1_train.pkl')['features'])[["features_RGB"]]
 features = np.squeeze(features_df.values, axis=1)
 
 middle_frame_index = features[0].shape[0] // 2 + 1

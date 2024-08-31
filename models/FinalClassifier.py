@@ -69,7 +69,7 @@ class MLP(nn.Module):
             nn.ReLU(),
             nn.Linear(512, 128),
             nn.ReLU(),
-            nn.Linear(1028, num_classes),
+            nn.Linear(128, num_classes),
             nn.Sigmoid()
         )
 

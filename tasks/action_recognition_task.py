@@ -48,7 +48,7 @@ class ActionRecognition(tasks.Task, ABC):
         # Use the cross entropy loss as the default criterion for the classification task
         if kwargs.get('loss_weights', None) is not None:
             # Create the pre-computed list of class weights
-            loss_weights = torch.tensor(kwargs.loss_weights, device=torch.device("cuda"))
+            loss_weights = torch.tensor(kwargs['loss_weights'], device=torch.device("cuda"))
             self.criterion = torch.nn.CrossEntropyLoss(weight=loss_weights, size_average=None, ignore_index=-100,
                                                    reduce=None, reduction='none')
         else:

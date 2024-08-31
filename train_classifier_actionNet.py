@@ -60,7 +60,7 @@ def main():
     if 'RGB' in modalities:
         loss_weights = args.loss_weights.sub4
     else:
-        loss_weights = args.loss_weights.all
+        loss_weights = args.loss_weights.full
     
     # the models are wrapped into the ActionRecognition task which manages all the training steps
     action_classifier = tasks.ActionRecognition("action-classifier", models, args.batch_size,

@@ -132,22 +132,24 @@ emg_data = {'S00_2': None,
             'S09_2': None
             }
 
-df1 =  pd.DataFrame(pd.read_pickle('train_set.pkl'))
+# df1 =  pd.DataFrame(pd.read_pickle('train_set.pkl'))
 # df1 =  pd.DataFrame(pd.read_pickle('multimodal_train_set.pkl'))
 # print(len(df1))
 # print(df1['label'].value_counts().sort_index())
-counts = df1['label'].value_counts().sort_index().values
-weights = 1.0 / counts
-print(weights / weights.mean())
-exit()
+# counts = df1['label'].value_counts().sort_index().values
+# weights = 1.0 / counts
+# print(weights / weights.mean())
 # df2 =  pd.DataFrame(pd.read_pickle('test_set.pkl'))
 # df2 =  pd.DataFrame(pd.read_pickle('multimodal_test_set.pkl'))
-# print(len(df2)/(len(df2) + len(df1)))
+# print(len(df2))
 # print(df2['label'].value_counts(normalize=True))
+# exit()
 
+samples = pd.DataFrame()
 for s in emg_data:
     df =  pd.DataFrame(pd.read_pickle(f'emg\{s}.pkl'))
     emg_data[s] = segment_data(df)
+    emg_data[s]['subject'] = s
     for i, row in emg_data[s].iterrows():
         # Rectification
         myo_left_abs = np.abs(row['myo_left_readings'])
@@ -178,48 +180,54 @@ for s in emg_data:
         emg_data[s].at[i, 'myo_right_readings'] = myo_right_normalized
         # emg_data[s].at[i, 'myo_left_readings'] = forearm_activation_left_smooth
         # emg_data[s].at[i, 'myo_right_readings'] = forearm_activation_right_smooth
+    
+    samples = pd.concat([samples, emg_data[s]], ignore_index=True)
 
+sub4_samples = samples[samples['subject'] == 'S04_1']
 
+y = samples['label']
+X_train, X_test, y_train, y_test = train_test_split(samples, y, test_size=0.2, stratify=y, random_state=42)
+# Calculate loss weights for each class:
+class_counts = X_train['label'].value_counts().sort_index().values
+class_weights = 1.0 / class_counts
+print(class_weights / class_weights.mean())
+X_train.to_pickle('train_set.pkl')
+X_test.to_pickle('test_set.pkl')
 
-train_df =  pd.DataFrame(pd.read_pickle('.\ActionNet_train.pkl'))
-test_df =  pd.DataFrame(pd.read_pickle('.\ActionNet_test.pkl'))
+y = sub4_samples['label']
+X_train, X_test, y_train, y_test = train_test_split(sub4_samples, y, test_size=0.2, stratify=y, random_state=42)
+# Calculate loss weights for each class:
+class_counts = X_train['label'].value_counts().sort_index().values
+class_weights = 1.0 / class_counts
+print(class_weights / class_weights.mean())
+X_train.to_pickle('multimodal_train_set.pkl')
+X_test.to_pickle('multimodal_test_set.pkl')
 
-train_set = pd.DataFrame()
-test_set = pd.DataFrame()
+# train_df =  pd.DataFrame(pd.read_pickle('.\ActionNet_train.pkl'))
+# test_df =  pd.DataFrame(pd.read_pickle('.\ActionNet_test.pkl'))
 
-for i, row in train_df.iterrows():
-    subject = row['file'][:-4]
-    df = emg_data[subject]
+# train_set = pd.DataFrame()
+# test_set = pd.DataFrame()
 
-    data = df[df['idx'] == row['index']].copy()
-    data['subject'] = subject
-    train_set = pd.concat([train_set, data], ignore_index=True)
+# for i, row in train_df.iterrows():
+#     subject = row['file'][:-4]
+#     df = emg_data[subject]
 
-for i, row in test_df.iterrows():
-    subject = row['file'][:-4]
-    df = emg_data[subject]
+#     data = df[df['idx'] == row['index']].copy()
+#     data['subject'] = subject
+#     train_set = pd.concat([train_set, data], ignore_index=True)
 
-    data = df[df['idx'] == row['index']].copy()
-    data['subject'] = subject
-    test_set = pd.concat([test_set, data], ignore_index=True)
+# for i, row in test_df.iterrows():
+#     subject = row['file'][:-4]
+#     df = emg_data[subject]
 
+#     data = df[df['idx'] == row['index']].copy()
+#     data['subject'] = subject
+#     test_set = pd.concat([test_set, data], ignore_index=True)
 
-# df = pd.concat([train_set, test_set], ignore_index=True)
-# sub4 = df[df['subject'] == 'S04_1']
+# train_set.to_pickle('train_set.pkl')
+# test_set.to_pickle('test_set.pkl')
 
-# y = df['label']
-# X_train, X_test, y_train, y_test = train_test_split(df, y, test_size=0.1, stratify=y, random_state=42)
-
-train_set.to_pickle('train_set.pkl')
-test_set.to_pickle('test_set.pkl')
-# X_train.to_pickle('train_set.pkl')
-# X_test.to_pickle('test_set.pkl')
-
-# y = sub4['label']
-# X_train, X_test, y_train, y_test = train_test_split(sub4, y, test_size=0.1, stratify=y, random_state=42)
-
-multimodal_train_set = train_set[train_set['subject'] == 'S04_1']
-multimodal_test_set = test_set[test_set['subject'] == 'S04_1']
-# X_train.to_pickle('multimodal_train_set.pkl')
-# X_test.to_pickle('multimodal_test_set.pkl')
+# multimodal_train_set = train_set[train_set['subject'] == 'S04_1']
+# multimodal_test_set = test_set[test_set['subject'] == 'S04_1']
 

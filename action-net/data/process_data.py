@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from scipy.signal import butter, filtfilt
+from sklearn.model_selection import train_test_split
 
 
 def low_pass_filter(data, cutoff=5, fs=200):
@@ -131,6 +132,19 @@ emg_data = {'S00_2': None,
             'S09_2': None
             }
 
+df1 =  pd.DataFrame(pd.read_pickle('multimodal_train_set.pkl'))
+# df1 =  pd.DataFrame(pd.read_pickle('multimodal_train_set.pkl'))
+# print(len(df1))
+# print(df1['label'].value_counts().sort_index())
+counts = df1['label'].value_counts().sort_index().values
+weights = 1.0 / counts
+print(weights / weights.mean())
+exit()
+# df2 =  pd.DataFrame(pd.read_pickle('test_set.pkl'))
+# df2 =  pd.DataFrame(pd.read_pickle('multimodal_test_set.pkl'))
+# print(len(df2)/(len(df2) + len(df1)))
+# print(df2['label'].value_counts(normalize=True))
+
 for s in emg_data:
     df =  pd.DataFrame(pd.read_pickle(f'emg\{s}.pkl'))
     emg_data[s] = segment_data(df)
@@ -190,11 +204,22 @@ for i, row in test_df.iterrows():
     test_set = pd.concat([test_set, data], ignore_index=True)
 
 
-train_set.to_pickle('train_set.pkl')
-test_set.to_pickle('test_set.pkl')
+df = pd.concat([train_set, test_set], ignore_index=True)
+sub4 = df[df['subject'] == 'S04_1']
 
-multimodal_train_set = train_set[train_set['subject'] == 'S04_1']
-multimodal_test_set = test_set[test_set['subject'] == 'S04_1']
-multimodal_train_set.to_pickle('multimodal_train_set.pkl')
-multimodal_test_set.to_pickle('multimodal_test_set.pkl')
+y = df['label']
+X_train, X_test, y_train, y_test = train_test_split(df, y, test_size=0.1, stratify=y, random_state=42)
+
+# train_set.to_pickle('train_set.pkl')
+# test_set.to_pickle('test_set.pkl')
+X_train.to_pickle('train_set.pkl')
+X_test.to_pickle('test_set.pkl')
+
+y = sub4['label']
+X_train, X_test, y_train, y_test = train_test_split(sub4, y, test_size=0.1, stratify=y, random_state=42)
+
+# multimodal_train_set = train_set[train_set['subject'] == 'S04_1']
+# multimodal_test_set = test_set[test_set['subject'] == 'S04_1']
+X_train.to_pickle('multimodal_train_set.pkl')
+X_test.to_pickle('multimodal_test_set.pkl')
 

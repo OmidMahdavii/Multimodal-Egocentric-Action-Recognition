@@ -1,6 +1,6 @@
 action: train # train or test
 name: classify_emg_lstm
-modality: ["EMG"] # modality used
+modality: ["RGB"] # modality used
 early_fusion: False
 total_batch: 128 # total batch size if training is done with gradient accumulation
 batch_size: 32 # batch size for the forward
@@ -8,9 +8,13 @@ gpus: null # gpus adopted
 resume_from: null # checkpoint directory
 models_dir: null # directory containing all the models
 
-num_iter: 5000 # number of training iterations with total_batch size
-lr_steps: 2000 # steps before reducing learning rate
+num_iter: 7000 # number of training iterations with total_batch size
+lr_steps: 5000 # steps before reducing learning rate
 eval_freq: 50 # evaluation frequency
+
+loss_weights:
+  all: []
+  sub4: [0.08919617,0.3209069,0.23934306,0.30882976,0.23834994,0.49949857,0.85734829,0.87033841,0.95737225,1.1488467,1.59562042,2.87211676,2.49749283,2.7353493,2.49749283,0.36587475,0.44186412,0.87033841,0.36587475,0.22794577]
 
 dataset:
   annotations_path: action-net/data
@@ -22,21 +26,21 @@ dataset:
 
 models:
   RGB:
-    model: RGB_Classifier
+    model: LSTM
     kwargs: {}
-    lr: 0.0001
+    lr: 0.01
     sgd_momentum: 0.9
     weight_decay: 1e-7
   EMG:
     model: EMG_LSTM
     kwargs: {}
-    lr: 0.0001
+    lr: 0.01
     sgd_momentum: 0.9
     weight_decay: 1e-7
   fusion:
     model: Early_Fusion
     kwargs: {}
-    lr: 0.0001
+    lr: 0.01
     sgd_momentum: 0.9
     weight_decay: 1e-7
 

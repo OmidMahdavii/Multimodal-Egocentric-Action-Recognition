@@ -50,16 +50,22 @@ def main():
     models = {}
     logger.info("Instantiating models per modality")
     if args.early_fusion:
-        models['fusion'] = getattr(model_list, args.models['fusion'].model)(num_classes)
+        models['fusion'] = getattr(model_list, args.models['fusion'].model)(num_classes, 1)
     else:
       for m in modalities:
           logger.info('{} Net\tModality: {}'.format(args.models[m].model, m))
-          models[m] = getattr(model_list, args.models[m].model)(num_classes)
-
+          models[m] = getattr(model_list, args.models[m].model)(num_classes, 1)    
+    
+    # Create the pre-computed list of class weights
+    if 'RGB' in modalities:
+        loss_weights = args.loss_weights.sub4
+    else:
+        loss_weights = args.loss_weights.all
+    
     # the models are wrapped into the ActionRecognition task which manages all the training steps
     action_classifier = tasks.ActionRecognition("action-classifier", models, args.batch_size,
                                                 args.total_batch, args.models_dir, num_classes,
-                                                1, args.models, args=args)
+                                                1, args.models, args=args, loss_weights=loss_weights)
     action_classifier.load_on_gpu(device)
  
     if args.action == "train":

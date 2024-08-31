@@ -1,23 +1,23 @@
 from torch import nn
 
 
-class RGB_Classifier(nn.Module):
-    def __init__(self, num_classes):
-        super().__init__()
+# class RGB_Classifier(nn.Module):
+#     def __init__(self, num_classes, num_input):
+#         super().__init__()
 
-        self.model = nn.Sequential(
-            nn.Linear(1024, num_classes),
-            nn.Softmax()
-        )
+#         self.model = nn.Sequential(
+#             nn.Linear(1024, num_classes),
+#             nn.Softmax()
+#         )
 
         
 
-    def forward(self, x):
-        return self.model(x), {}
+    # def forward(self, x):
+    #     return self.model(x), {}
 
 
 class EMG_LSTM(nn.Module):
-    def __init__(self, num_classes):
+    def __init__(self, num_classes, num_input):
         super().__init__()
 
         self.lstm1 = nn.LSTM(input_size=16, hidden_size=5, num_layers=1, batch_first=True)
@@ -39,7 +39,7 @@ class EMG_LSTM(nn.Module):
 
 
 class EMG_CNN(nn.Module):
-    def __init__(self, num_classes):
+    def __init__(self, num_classes, num_input):
         super().__init__()
 
         self.conv = nn.Sequential(
@@ -71,7 +71,7 @@ class EMG_CNN(nn.Module):
 
 
 class Early_Fusion(nn.Module):
-    def __init__(self, num_classes):
+    def __init__(self, num_classes, num_input):
         super().__init__()
 
         self.lstm1 = nn.LSTM(input_size=1040, hidden_size=5, num_layers=1, batch_first=True)

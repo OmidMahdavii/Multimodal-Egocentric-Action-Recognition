@@ -1,5 +1,5 @@
 action: train # train or test
-name: classify_emg_lstm
+name: classify_AN_rgb_lstm
 modality: ["RGB"] # modality used
 early_fusion: False
 total_batch: 128 # total batch size if training is done with gradient accumulation

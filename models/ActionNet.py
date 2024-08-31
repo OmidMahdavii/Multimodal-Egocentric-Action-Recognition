@@ -1,21 +1,6 @@
 from torch import nn
 
 
-# class RGB_Classifier(nn.Module):
-#     def __init__(self, num_classes, num_input):
-#         super().__init__()
-
-#         self.model = nn.Sequential(
-#             nn.Linear(1024, num_classes),
-#             nn.Softmax()
-#         )
-
-        
-
-    # def forward(self, x):
-    #     return self.model(x), {}
-
-
 class EMG_LSTM(nn.Module):
     def __init__(self, num_classes, num_input):
         super().__init__()
@@ -28,8 +13,6 @@ class EMG_LSTM(nn.Module):
             nn.Linear(50, num_classes),
             nn.Softmax()
         )
-
-        
 
     def forward(self, x):
         y, _ = self.lstm1(x)
@@ -56,8 +39,6 @@ class EMG_CNN(nn.Module):
             nn.Softmax()
         )
 
-
-
     def forward(self, x):
         y = x.unsqueeze(1)
         y = self.conv(y)
@@ -82,8 +63,6 @@ class Early_Fusion(nn.Module):
             nn.Linear(50, num_classes),
             nn.Softmax()
         )
-
-        
 
     def forward(self, x):
         y, _ = self.lstm1(x)
